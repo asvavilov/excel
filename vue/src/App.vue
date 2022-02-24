@@ -8,15 +8,19 @@
   <button :disabled="wait" @click="wait = true; prepare(); wait = false;">prepare</button>
   <button :disabled="wait" @click="wait = true; calc(); wait = false;">calc</button>
   <br>
-  my:
+  reactive:
   <button :disabled="wait" @click="wait = true; prepare2(); wait = false;">prepare2</button>
   <button :disabled="wait" @click="wait = true; calc2(); wait = false;">calc2</button>
+  <br>
+  js:
+  <button :disabled="wait" @click="wait = true; prepare3(); wait = false;">prepare3</button>
+  <button :disabled="wait" @click="wait = true; calc3(); wait = false;">calc3</button>
 </template>
 
 <script lang="ts">
-import { defineComponent, Ref, ref, unref } from 'vue';
+import { defineComponent, Ref, ref } from 'vue';
 import { HyperFormula } from 'hyperformula';
-import { gen, gen2 } from './lib/gen';
+import { Cell, cellValue, gen, gen2, gen3 } from './lib/gen';
 
 const wait = ref(false);
 
@@ -67,12 +71,37 @@ export default defineComponent({
       console.log(performance.getEntriesByName('calc')[0].duration, 'ms');
     };
 
-    // test my
-    let matrix: Ref<number>[][]|null = null;
+    // test reactive
+    let matrixRef: Ref<number>[][]|null = null;
     const prepare2 = () => {
-      matrix = gen2(num.value, end.value);
+      matrixRef = gen2(num.value, end.value);
     };
     const calc2 = () => {
+      if (!matrixRef)
+      {
+        return;
+      }
+
+      console.log('rows', end.value);
+
+      matrixRef[0][1].value = num.value;
+
+      performance.clearMarks();
+      performance.clearMeasures();
+      performance.mark('calc2Begin');
+      console.log('sum', matrixRef[0][3].value);
+      //console.table(matrix.map(r => r.map(c => c.value)))
+      performance.mark('calc2End');
+      performance.measure('calc2', 'calc2Begin', 'calc2End');
+      console.log(performance.getEntriesByName('calc2')[0].duration, 'ms');
+    };
+
+    // test js
+    let matrix: Cell[][]|null = null;
+    const prepare3 = () => {
+      matrix = gen3(num.value, end.value);
+    };
+    const calc3 = () => {
       if (!matrix)
       {
         return;
@@ -80,16 +109,16 @@ export default defineComponent({
 
       console.log('rows', end.value);
 
-      matrix[0][1].value = num.value;
+      matrix[0][1] = num.value;
 
       performance.clearMarks();
       performance.clearMeasures();
-      performance.mark('calc2Begin');
-      console.log('sum', matrix[0][3].value);
-      //console.table(matrix.map(r => r.map(c => c.value)))
-      performance.mark('calc2End');
-      performance.measure('calc2', 'calc2Begin', 'calc2End');
-      console.log(performance.getEntriesByName('calc2')[0].duration, 'ms');
+      performance.mark('calc3Begin');
+      console.log('sum', cellValue(matrix[0][3]));
+      //console.table(matrix)
+      performance.mark('calc3End');
+      performance.measure('calc3', 'calc3Begin', 'calc3End');
+      console.log(performance.getEntriesByName('calc3')[0].duration, 'ms');
     };
 
     return {
@@ -100,6 +129,8 @@ export default defineComponent({
       calc,
       prepare2,
       calc2,
+      prepare3,
+      calc3,
     }
   }
 });
